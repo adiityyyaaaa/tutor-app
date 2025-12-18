@@ -146,7 +146,13 @@ router.post('/register/student', uploadAadhaar.single('aadhaarDoc'), async (req,
 // @route   POST /api/auth/register/teacher
 // @desc    Register a new teacher
 // @access  Public
-router.post('/register/teacher', async (req, res) => {
+// @route   POST /api/auth/register/teacher
+// @desc    Register a new teacher
+// @access  Public
+router.post('/register/teacher', uploadAadhaar.fields([
+    { name: 'photo', maxCount: 1 },
+    { name: 'aadhaarDoc', maxCount: 1 }
+]), async (req, res) => {
     try {
         const {
             name,
@@ -236,6 +242,19 @@ router.post('/register/teacher', async (req, res) => {
             });
         }
 
+        // Get file paths
+        let photoPath = '';
+        let aadhaarPath = '';
+
+        if (req.files) {
+            if (req.files.photo) {
+                photoPath = req.files.photo[0].path;
+            }
+            if (req.files.aadhaarDoc) {
+                aadhaarPath = req.files.aadhaarDoc[0].path;
+            }
+        }
+
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -248,6 +267,8 @@ router.post('/register/teacher', async (req, res) => {
             phone,
             aadhaarNumber,
             address: parsedAddress,
+            photo: photoPath,
+            aadhaarPhoto: aadhaarPath,
             qualifications: typeof qualifications === 'string' ? JSON.parse(qualifications) : qualifications,
             subjects: typeof subjects === 'string' ? JSON.parse(subjects) : subjects,
             boards: typeof boards === 'string' ? JSON.parse(boards) : boards,

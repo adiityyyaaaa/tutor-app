@@ -48,6 +48,8 @@ app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/messages', require('./routes/messages'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/analytics', require('./routes/analytics'));
 
 // Health check route
 app.get('/api/health', (req, res) => {

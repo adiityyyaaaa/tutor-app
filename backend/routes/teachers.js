@@ -22,11 +22,22 @@ router.get('/search', async (req, res) => {
             examSpecialist,
             maxDistance,
             day,
-            time
+            time,
+            search // Add search param
         } = req.query;
 
         // Build query
         let query = { isActive: true };
+
+        // Search text filter
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+            query.$or = [
+                { name: searchRegex },
+                { subjects: searchRegex },
+                { bio: searchRegex }
+            ];
+        }
 
         // Subject filter
         if (subject) {

@@ -329,6 +329,17 @@ router.post('/:id/complete-demo', protect, async (req, res) => {
             }
         }
 
+        // Create notification for teacher
+        const Notification = require('../models/Notification');
+        await Notification.create({
+            recipient: booking.teacherId,
+            message: satisfactory
+                ? `Demo with ${req.user.name} marked as Satisfactory. Payment released.`
+                : `Demo with ${req.user.name} marked as Unsatisfactory. Booking cancelled.`,
+            type: satisfactory ? 'success' : 'error',
+            relatedBookingId: booking._id
+        });
+
         await booking.save();
 
         res.status(200).json({

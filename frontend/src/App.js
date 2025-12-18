@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CallProvider } from './context/CallContext';
+import CallManager from './components/CallManager';
 
 // Pages (we'll create these)
 import Landing from './pages/Landing';
@@ -114,11 +116,14 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="App">
-          <AppRoutes />
-        </div>
-      </Router>
+      <CallProvider>
+        <Router>
+          <div className="App">
+            <CallManager />
+            <AppRoutes />
+          </div>
+        </Router>
+      </CallProvider>
     </AuthProvider>
   );
 }

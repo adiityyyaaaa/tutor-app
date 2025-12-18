@@ -5,11 +5,29 @@ import { bookingsAPI } from '../services/api';
 import { BookOpen, Search, MessageCircle, LogOut, Calendar, TrendingUp, Clock } from 'lucide-react';
 import { formatDate, formatCurrency } from '../utils/helpers';
 
+import DemoCompletionModal from '../components/DemoCompletionModal';
+import NotificationBell from '../components/NotificationBell';
+import ReviewSubmissionModal from '../components/ReviewSubmissionModal';
+import DashboardCalendar from '../components/DashboardCalendar';
+
 const StudentDashboard = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState(null);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+    const openCompletionModal = (booking) => {
+        setSelectedBooking(booking);
+        setIsCompletionModalOpen(true);
+    };
+
+    const openReviewModal = (booking) => {
+        setSelectedBooking(booking);
+        setIsReviewModalOpen(true);
+    };
 
     useEffect(() => {
         fetchBookings();
@@ -52,6 +70,7 @@ const StudentDashboard = () => {
                                 <MessageCircle className="w-5 h-5" />
                                 <span className="hidden md:inline">Messages</span>
                             </Link>
+                            <NotificationBell />
                             <button onClick={handleLogout} className="btn btn-secondary flex items-center space-x-2">
                                 <LogOut className="w-5 h-5" />
                                 <span className="hidden md:inline">Logout</span>
@@ -159,16 +178,38 @@ const StudentDashboard = () => {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-right flex flex-col items-end gap-2">
                                             <div className={`badge ${booking.bookingStatus === 'confirmed' ? 'badge-success' :
-                                                    booking.bookingStatus === 'completed' ? 'badge-primary' :
-                                                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+                                                booking.bookingStatus === 'completed' ? 'badge-primary' :
+                                                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
                                                 }`}>
                                                 {booking.bookingStatus}
                                             </div>
-                                            <p className="text-sm font-semibold text-gray-900 dark:text-white mt-2">
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                                 {formatCurrency(booking.amount)}
                                             </p>
+
+                                            {/* Phase 6: Demo Completion Action */}
+                                            {booking.bookingType === 'demo' &&
+                                                booking.bookingStatus === 'confirmed' &&
+                                                !booking.demoCompleted && (
+                                                    <button
+                                                        onClick={() => openCompletionModal(booking)}
+                                                        className="btn btn-xs btn-outline-primary"
+                                                    >
+                                                        Mark Complete
+                                                    </button>
+                                                )}
+
+                                            {/* Phase 10: Review Action */}
+                                            {booking.bookingStatus === 'completed' && (
+                                                <button
+                                                    onClick={() => openReviewModal(booking)}
+                                                    className="btn btn-xs btn-secondary"
+                                                >
+                                                    Write Review
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -177,41 +218,66 @@ const StudentDashboard = () => {
                     )}
                 </div>
 
-                {/* Quick Actions */}
+                {/* Quick Actions & Calendar */}
                 <div className="grid md:grid-cols-2 gap-6 mt-8">
                     <div className="card">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
-                        <div className="space-y-3">
-                            <Link to="/search" className="btn btn-outline w-full justify-start">
-                                <Search className="w-5 h-5 mr-2" />
-                                Search for Tutors
-                            </Link>
-                            <Link to="/chat" className="btn btn-outline w-full justify-start">
-                                <MessageCircle className="w-5 h-5 mr-2" />
-                                View Messages
-                            </Link>
-                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">My Schedule</h3>
+                        <DashboardCalendar bookings={bookings} />
                     </div>
 
-                    <div className="card">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Student Info</h3>
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Student Name:</span>
-                                <span className="font-medium">{user?.studentName || 'N/A'}</span>
+                    <div className="space-y-6">
+                        <div className="card">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <Link to="/search" className="flex flex-col items-center justify-center p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors border border-primary-100 dark:border-primary-800 text-center group">
+                                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-800 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                        <Search className="w-5 h-5 text-primary" />
+                                    </div>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Find Tutors</span>
+                                </Link>
+                                <Link to="/chat" className="flex flex-col items-center justify-center p-4 bg-secondary-50 dark:bg-gray-700/50 rounded-lg hover:bg-secondary-100 dark:hover:bg-gray-700 transition-colors border border-secondary-100 dark:border-gray-600 text-center group">
+                                    <div className="w-10 h-10 bg-secondary-100 dark:bg-gray-600 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                        <MessageCircle className="w-5 h-5 text-secondary-600 dark:text-gray-300" />
+                                    </div>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Messages</span>
+                                </Link>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Class:</span>
-                                <span className="font-medium">{user?.class || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Board:</span>
-                                <span className="font-medium">{user?.board || 'N/A'}</span>
+                        </div>
+
+                        <div className="card">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Student Info</h3>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600 dark:text-gray-400">Student Name:</span>
+                                    <span className="font-medium">{user?.studentName || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600 dark:text-gray-400">Class:</span>
+                                    <span className="font-medium">{user?.class || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600 dark:text-gray-400">Board:</span>
+                                    <span className="font-medium">{user?.board || 'N/A'}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <DemoCompletionModal
+                booking={selectedBooking}
+                isOpen={isCompletionModalOpen}
+                onClose={() => setIsCompletionModalOpen(false)}
+                onUpdate={fetchBookings}
+            />
+
+            <ReviewSubmissionModal
+                booking={selectedBooking}
+                isOpen={isReviewModalOpen}
+                onClose={() => setIsReviewModalOpen(false)}
+                onReviewSubmitted={fetchBookings}
+            />
         </div>
     );
 };

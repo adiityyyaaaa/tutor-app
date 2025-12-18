@@ -1,11 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, Users, DollarSign, Calendar, MessageCircle, LogOut } from 'lucide-react';
+import NotificationBell from '../components/NotificationBell';
+import EarningsChart from '../components/EarningsChart';
+import DashboardCalendar from '../components/DashboardCalendar';
+import ProfileCompletion from '../components/ProfileCompletion';
+import { analyticsAPI, bookingsAPI } from '../services/api';
+import { formatCurrency } from '../utils/helpers';
+
+
 
 const TeacherDashboard = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const [stats, setStats] = useState({ totalEarnings: 0, chartData: [], upcomingClassesCount: 0 });
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [statsRes, bookingsRes] = await Promise.all([
+                    analyticsAPI.getTeacherStats(),
+                    bookingsAPI.getAll()
+                ]);
+
+                if (statsRes.data.success) {
+                    setStats(statsRes.data.stats);
+                }
+                if (bookingsRes.data.success) {
+                    setBookings(bookingsRes.data.bookings);
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const handleLogout = () => {
         logout();
@@ -27,6 +62,7 @@ const TeacherDashboard = () => {
                                 <MessageCircle className="w-5 h-5" />
                                 <span className="hidden md:inline">Messages</span>
                             </Link>
+                            <NotificationBell />
                             <button onClick={handleLogout} className="btn btn-secondary flex items-center space-x-2">
                                 <LogOut className="w-5 h-5" />
                                 <span className="hidden md:inline">Logout</span>
@@ -47,6 +83,12 @@ const TeacherDashboard = () => {
                     </p>
                 </div>
 
+                {/* Profile Completion Indicator */}
+                <div className="max-w-3xl">
+                    <ProfileCompletion user={user} />
+                </div>
+
+                {/* Stats Grid */}
                 {/* Stats Grid */}
                 <div className="grid md:grid-cols-4 gap-6 mb-8">
                     <div className="card">
@@ -56,6 +98,16 @@ const TeacherDashboard = () => {
                                 <p className="text-3xl font-bold text-gray-900 dark:text-white">{user?.totalStudents || 0}</p>
                             </div>
                             <Users className="w-12 h-12 text-primary" />
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Total Earnings</p>
+                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.totalEarnings)}</p>
+                            </div>
+                            <DollarSign className="w-12 h-12 text-success" />
                         </div>
                     </div>
 
@@ -72,69 +124,60 @@ const TeacherDashboard = () => {
                     <div className="card">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Total Reviews</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Reviews</p>
                                 <p className="text-3xl font-bold text-gray-900 dark:text-white">{user?.totalReviews || 0}</p>
                             </div>
-                            <MessageCircle className="w-12 h-12 text-success" />
-                        </div>
-                    </div>
-
-                    <div className="card">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Rate</p>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">₹{user?.monthlyRate || 0}</p>
-                            </div>
-                            <DollarSign className="w-12 h-12 text-primary" />
+                            <MessageCircle className="w-12 h-12 text-blue-500" />
                         </div>
                     </div>
                 </div>
 
                 {/* Content Grid */}
-                <div className="grid md:grid-cols-2 gap-8">
-                    {/* Upcoming Classes */}
+                <div className="grid md:grid-cols-2 gap-8 mb-8">
+                    {/* Earnings Chart */}
                     <div className="card">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Upcoming Classes</h2>
-                        <div className="text-center py-12">
-                            <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-600 dark:text-gray-400">
-                                No upcoming classes scheduled
-                            </p>
-                        </div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Earnings Overview</h2>
+                        <EarningsChart data={stats.chartData} />
                     </div>
 
-                    {/* Profile Info */}
+                    {/* Upcoming Classes / Calendar */}
                     <div className="card">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Profile Information</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Subjects</p>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {user?.subjects?.map((subject, index) => (
-                                        <span key={index} className="badge badge-primary">
-                                            {subject}
-                                        </span>
-                                    )) || <span className="text-gray-500">None added</span>}
-                                </div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Schedule</h2>
+                        <DashboardCalendar bookings={bookings} />
+                    </div>
+                </div>
+
+                {/* Profile Info */}
+                <div className="card">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Profile Information</h2>
+                    <div className="space-y-4">
+                        <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Subjects</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {user?.subjects?.map((subject, index) => (
+                                    <span key={index} className="badge badge-primary">
+                                        {subject}
+                                    </span>
+                                )) || <span className="text-gray-500">None added</span>}
                             </div>
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Boards</p>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {user?.boards?.map((board, index) => (
-                                        <span key={index} className="badge badge-success">
-                                            {board}
-                                        </span>
-                                    )) || <span className="text-gray-500">None added</span>}
-                                </div>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Boards</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {user?.boards?.map((board, index) => (
+                                    <span key={index} className="badge badge-success">
+                                        {board}
+                                    </span>
+                                )) || <span className="text-gray-500">None added</span>}
                             </div>
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Experience</p>
-                                <p className="font-medium mt-1">{user?.experience || 0} years</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Exam Specialist</p>
-                                <p className="font-medium mt-1">{user?.examSpecialist ? 'Yes' : 'No'}</p>
-                            </div>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Experience</p>
+                            <p className="font-medium mt-1">{user?.experience || 0} years</p>
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Rate</p>
+                            <p className="font-medium mt-1">{formatCurrency(user?.monthlyRate || 0)}</p>
                         </div>
                     </div>
                 </div>

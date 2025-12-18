@@ -43,7 +43,9 @@ api.interceptors.response.use(
 export const authAPI = {
     login: (credentials) => api.post('/auth/login', credentials),
     registerStudent: (data) => api.post('/auth/register/student', data),
-    registerTeacher: (data) => api.post('/auth/register/teacher', data),
+    registerTeacher: (data) => api.post('/auth/register/teacher', data, {
+        headers: { 'Content-Type': 'multipart/form-data' } // Important for file uploads
+    }),
 };
 
 // Teachers
@@ -98,6 +100,16 @@ export const messagesAPI = {
     getConversations: () => api.get('/messages/conversations/list'),
     markAsRead: (id) => api.put(`/messages/${id}/read`),
     markAllAsRead: (userId) => api.put(`/messages/conversation/${userId}/read-all`),
+};
+
+// Notifications
+export const notificationsAPI = {
+    getAll: () => api.get('/notifications'),
+    markAsRead: (id) => api.put(`/notifications/${id}/read`),
+};
+
+export const analyticsAPI = {
+    getTeacherStats: () => api.get('/analytics/teacher-stats'),
 };
 
 export default api;
